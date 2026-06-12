@@ -344,16 +344,36 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
   display:block;padding:6px 8px;font-size:.66rem;color:var(--text-muted);
   letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
+/* Номер у послідовності (1, 2, 3…) — інструмент «Порядок» */
 .review-mark{
-  position:absolute;top:7px;right:7px;width:24px;height:24px;border-radius:50%;
-  background:var(--del);color:#fff;display:none;align-items:center;
-  justify-content:center;font-size:.8rem;line-height:1;font-weight:600;
+  position:absolute;top:7px;right:7px;min-width:24px;height:24px;padding:0 6px;border-radius:12px;
+  background:var(--accent);color:#0a0a0a;display:none;align-items:center;
+  justify-content:center;font-size:.82rem;line-height:1;font-weight:700;
   box-shadow:0 2px 6px rgba(0,0,0,.5)
 }
-.review-cell.marked{outline-color:var(--del)}
-.review-cell.marked img{opacity:.4}
-.review-cell.marked .review-mark{display:flex}
-.review-cell.marked .review-name{color:var(--del)}
+.review-cell.ordered{outline-color:var(--accent)}
+.review-cell.ordered .review-mark{display:flex}
+.review-cell.ordered .review-name{color:var(--accent)}
+/* Кнопка «око» — перегляд фото на повний екран */
+.review-eye{
+  position:absolute;top:7px;left:7px;width:26px;height:26px;border-radius:50%;padding:0;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:var(--text);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:1;
+  transition:opacity 160ms,background 160ms,border-color 160ms
+}
+.review-eye:hover{background:rgba(0,0,0,.85);border-color:var(--accent-dim)}
+.review-eye svg{width:15px;height:15px;pointer-events:none}
+@media(hover:hover){ .review-eye{opacity:0} .review-cell:hover .review-eye{opacity:1} }
+/* Оверлей перегляду фото */
+#review-preview{
+  position:fixed;inset:0;z-index:320;background:rgba(8,7,6,.94);
+  display:none;align-items:center;justify-content:center;padding:24px;cursor:zoom-out
+}
+#review-preview.show{display:flex}
+#review-preview img{max-width:100%;max-height:100%;object-fit:contain;
+  box-shadow:0 16px 60px rgba(0,0,0,.6);border-radius:2px}
+/* Підказка інструмента «Порядок» */
+#review-hint{padding:10px 24px 0;color:var(--text-muted);font-size:.8rem;letter-spacing:.02em}
 #review-toast{
   position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(12px);
   background:rgba(0,0,0,.85);backdrop-filter:blur(8px);border:1px solid var(--border);
@@ -511,13 +531,13 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
     </svg>
     Категорії
   </button>
-  <button id="review-open" title="Відбір фото на видалення">
+  <button id="review-open" title="Порядок фото">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="9 11 12 14 22 4"/>
-      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      <line x1="9" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="9" y1="18" x2="21" y2="18"/>
+      <circle cx="4.5" cy="6" r="1.1"/><circle cx="4.5" cy="12" r="1.1"/><circle cx="4.5" cy="18" r="1.1"/>
     </svg>
-    Відбір
+    Порядок
   </button>
   <section id="hero">
     <div class="hero-portrait-wrap">
@@ -546,15 +566,16 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
   </section>
 </div>
 
-<!-- REVIEW / CULL -->
+<!-- ПОРЯДОК ФОТО (сортування в межах епохи) -->
 <div id="review-view" class="hidden">
   <div id="review-bar">
     <button id="review-back">← Галерея</button>
-    <span id="review-heading">Відбір на видалення</span>
-    <span id="review-count">Позначено: 0</span>
-    <button id="review-copy">Скопіювати список</button>
+    <span id="review-heading">Порядок фото</span>
+    <span id="review-count">Впорядковано: 0</span>
+    <button id="review-copy">Скопіювати порядок</button>
     <button id="review-clear">Очистити</button>
   </div>
+  <div id="review-hint">Клікай фото в потрібному порядку — перше, друге, третє… (повторний клік знімає номер). Око — переглянути фото. Далі «Скопіювати порядок» → встав у <b>to_order.txt</b> і запусти <b>python3 order.py</b>.</div>
   <textarea id="review-list" readonly placeholder=""></textarea>
   <div id="review-grid"></div>
 </div>
@@ -575,6 +596,7 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
   <div id="cat-grid"></div>
 </div>
 <div id="review-toast"></div>
+<div id="review-preview"><img alt="Перегляд фото"></div>
 
 <!-- VIEWER (lightbox) -->
 <div id="slideshow-view" class="hidden" role="dialog" aria-modal="true" aria-label="Перегляд фото">
@@ -1245,27 +1267,59 @@ gridClose.addEventListener('click', closeGrid);
 document.addEventListener('fullscreenchange', () => showChrome());
 
 /* ═══ INIT ═════════════════════════════════════════════════════════════════ */
-/* ═══ REVIEW / CULL MODE ════════════════════════════════════════════════════ */
+/* ═══ ПОРЯДОК ФОТО (сортування в межах епохи) ═══════════════════════════════ */
 let reviewOpen = false;
-const REVIEW_KEY = 'kyrylo_marked';
-const marked = new Set(JSON.parse(localStorage.getItem(REVIEW_KEY) || '[]'));
+const ORDER_KEY = 'kyrylo_order';
+// orderByEpoch: { "I. Дитинство": [стем, стем, …], … } — порядок кліків у межах епохи
+let orderByEpoch = {};
+try { orderByEpoch = JSON.parse(localStorage.getItem(ORDER_KEY) || '{}') || {}; } catch(e){ orderByEpoch = {}; }
 const reviewView  = document.getElementById('review-view');
 const reviewGrid  = document.getElementById('review-grid');
 const reviewCount = document.getElementById('review-count');
 const reviewList  = document.getElementById('review-list');
 const reviewToast = document.getElementById('review-toast');
+const reviewPreview = document.getElementById('review-preview');
+const reviewPreviewImg = reviewPreview.querySelector('img');
 
-function persistMarks() {
-  localStorage.setItem(REVIEW_KEY, JSON.stringify([...marked]));
+function persistOrder(){ localStorage.setItem(ORDER_KEY, JSON.stringify(orderByEpoch)); }
+
+function orderCount(){
+  return Object.values(orderByEpoch).reduce((n, a) => n + (a ? a.length : 0), 0);
 }
 
-function refreshReview() {
-  reviewCount.textContent = 'Позначено: ' + marked.size;
-  reviewList.value = [...marked].join('\n');
-  reviewList.classList.toggle('show', marked.size > 0);
+// Текст для to_order.txt: «# Епоха» + стеми в обраному порядку (порожні епохи пропускаємо)
+function buildOrderText(){
+  const lines = [];
+  GROUPS.forEach(g => {
+    const arr = orderByEpoch[g.title];
+    if (arr && arr.length){
+      lines.push('# ' + g.title);
+      arr.forEach(st => lines.push(st));
+      lines.push('');
+    }
+  });
+  return lines.join('\n').trim();
 }
 
-function buildReview() {
+function refreshReview(){
+  reviewCount.textContent = 'Впорядковано: ' + orderCount();
+  const txt = buildOrderText();
+  reviewList.value = txt;
+  reviewList.classList.toggle('show', !!txt);
+}
+
+// Перемалювати номери в одній епосі (після кліку — перенумерувати решту)
+function renumberGroup(cols, title){
+  const arr = orderByEpoch[title] || [];
+  cols.querySelectorAll('.review-cell').forEach(cell => {
+    const i = arr.indexOf(cell.dataset.stem);
+    const badge = cell.querySelector('.review-mark');
+    if (i >= 0){ cell.classList.add('ordered'); badge.textContent = (i + 1); }
+    else { cell.classList.remove('ordered'); badge.textContent = ''; }
+  });
+}
+
+function buildSort(){
   reviewGrid.textContent = '';
   GROUPS.forEach(g => {
     const h = document.createElement('h2');
@@ -1277,14 +1331,14 @@ function buildReview() {
     cols.className = 'review-cols';
     g.photos.forEach(ph => {
       const cell = document.createElement('div');
-      cell.className = 'review-cell' + (marked.has(ph.name) ? ' marked' : '');
+      cell.className = 'review-cell';
+      cell.dataset.stem = ph.name;
 
       const fig = document.createElement('figure');
       const img = document.createElement('img');
       img.alt = '';
       img.dataset.src = ph.thumb || ph.src;
       fig.appendChild(img);
-
       const cap = document.createElement('figcaption');
       cap.className = 'review-name';
       cap.textContent = ph.name;
@@ -1292,32 +1346,47 @@ function buildReview() {
 
       const badge = document.createElement('div');
       badge.className = 'review-mark';
-      badge.textContent = '✕';
+
+      const eye = document.createElement('button');
+      eye.className = 'review-eye';
+      eye.title = 'Переглянути';
+      eye.setAttribute('aria-label', 'Переглянути фото');
+      eye.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      eye.addEventListener('click', e => { e.stopPropagation(); openPreview(ph); });
 
       cell.appendChild(fig);
       cell.appendChild(badge);
+      cell.appendChild(eye);
       cell.addEventListener('click', () => {
-        if (marked.has(ph.name)) { marked.delete(ph.name); cell.classList.remove('marked'); }
-        else { marked.add(ph.name); cell.classList.add('marked'); }
-        persistMarks();
+        const arr = orderByEpoch[g.title] || (orderByEpoch[g.title] = []);
+        const i = arr.indexOf(ph.name);
+        if (i >= 0) arr.splice(i, 1);   // повторний клік — зняти номер
+        else arr.push(ph.name);          // інакше — у кінець черги
+        if (!arr.length) delete orderByEpoch[g.title];
+        persistOrder();
+        renumberGroup(cols, g.title);
         refreshReview();
       });
       cols.appendChild(cell);
       thumbObs.observe(img);
     });
     reviewGrid.appendChild(cols);
+    renumberGroup(cols, g.title);
   });
   refreshReview();
 }
 
-function openReview() {
+function openPreview(ph){ reviewPreviewImg.src = ph.src; reviewPreview.classList.add('show'); }
+function closePreview(){ reviewPreview.classList.remove('show'); reviewPreviewImg.removeAttribute('src'); }
+
+function openReview(){
   reviewOpen = true;
   groupsView.classList.add('hidden');
   reviewView.classList.remove('hidden');
-  buildReview();
+  buildSort();
   reviewView.scrollTop = 0;
 }
-function closeReview() {
+function closeReview(){
   reviewOpen = false;
   reviewView.classList.add('hidden');
   groupsView.classList.remove('hidden');
@@ -1330,27 +1399,30 @@ function showToast(msg) {
   showToast._t = setTimeout(() => reviewToast.classList.remove('show'), 1800);
 }
 
-function copyMarks() {
-  if (!marked.size) { showToast('Нічого не позначено'); return; }
-  const text = [...marked].join('\n');
-  const done = () => showToast('Скопійовано: ' + marked.size);
+function copyOrder(){
+  const text = buildOrderText();
+  if (!text){ showToast('Порядок не задано'); return; }
+  const done = () => showToast('Скопійовано: ' + orderCount() + ' фото');
   const fallback = () => { reviewList.classList.add('show'); reviewList.focus(); reviewList.select(); try { document.execCommand('copy'); } catch (e) {} done(); };
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done).catch(fallback);
   } else { fallback(); }
 }
 
-function clearMarks() {
-  marked.clear();
-  persistMarks();
-  reviewGrid.querySelectorAll('.review-cell.marked').forEach(c => c.classList.remove('marked'));
+function clearOrder(){
+  orderByEpoch = {};
+  persistOrder();
+  reviewGrid.querySelectorAll('.review-cell.ordered').forEach(c => {
+    c.classList.remove('ordered'); const b = c.querySelector('.review-mark'); if (b) b.textContent = '';
+  });
   refreshReview();
 }
 
 document.getElementById('review-open').addEventListener('click', openReview);
 document.getElementById('review-back').addEventListener('click', closeReview);
-document.getElementById('review-copy').addEventListener('click', copyMarks);
-document.getElementById('review-clear').addEventListener('click', clearMarks);
+document.getElementById('review-copy').addEventListener('click', copyOrder);
+document.getElementById('review-clear').addEventListener('click', clearOrder);
+reviewPreview.addEventListener('click', closePreview);
 
 /* ═══ CATEGORY EDITOR ═══════════════════════════════════════════════════════ */
 let catOpen = false;
