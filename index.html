@@ -125,18 +125,15 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 #v-backdrop{position:absolute;inset:0;z-index:0;background-size:cover;
   background-position:center;transform:scale(1.1);filter:blur(48px);will-change:background-image}
 #v-tint{position:absolute;inset:0;z-index:0;pointer-events:none;background:rgba(22,18,15,.42)}
-/* iOS/WebKit: filter:blur() у position:fixed-контейнері ламає композитинг усього
-   шару → весь в'юер (навіть текст) рендериться ЧОРНИМ. На телефоні бічні поля —
-   вузькі смужки, тож просто прибираємо розмитий бекдроп; фон #16120f лишається. */
 /* iOS/WebKit: mix-blend-mode на #atmo псувало композитинг сусіднього
    position:fixed #slideshow-view — фон малювався, а діти (фото/текст) НІ →
-   чорний екран при відкритті епохи (лише на iPhone; десктоп ок). #atmo —
-   декоративне зерно (opacity .04), на мобільному непомітне → ховаємо.
-   #v-backdrop теж приховано: blur(48px) на весь екран важкий, а на телефоні
-   майже не видно (вузькі бічні поля). Перевірено на реальному iPhone. */
+   чорний екран при відкритті епохи (лише на iPhone; десктоп ок). Фікс — сховати
+   #atmo на мобільних (декоративне зерно, opacity .04, непомітне). Перевірено на
+   реальному iPhone. Розмитий фон лишаємо, але легшим (blur 24px замість 48px) —
+   менше навантаження на мобільний GPU. */
 @media (max-width:820px){
   #atmo{display:none !important}
-  #v-backdrop{display:none}
+  #v-backdrop{filter:blur(24px)}
 }
 
 /* Stage occupies ONLY the region between the top zone and the dock zone, so the
