@@ -130,6 +130,9 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
    вузькі смужки, тож просто прибираємо розмитий бекдроп; фон #16120f лишається. */
 @media (max-width:820px){
   #v-backdrop{display:none}
+  /* iOS: mix-blend-mode на #atmo псує композитинг сусіднього fixed-в'юера
+     (фон малюється, діти — ні → чорний екран). #atmo декоративний — ховаємо. */
+  #atmo{display:none !important}
   /* iOS/WebKit: filter/backdrop-filter усередині position:fixed-в'юера ламає
      композитинг → фон малюється, а діти (фото/текст) — ні (чорний екран).
      Прибираємо скло-розмиття і примусово промоутимо шари (translateZ), щоб
