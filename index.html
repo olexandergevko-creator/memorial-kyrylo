@@ -135,7 +135,7 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
      Прибираємо скло-розмиття і примусово промоутимо шари (translateZ), щоб
      iOS малював вміст fixed+overflow:hidden контейнера. */
   #slideshow-view *{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
-  #slideshow-view{ -webkit-transform:translateZ(0); transform:translateZ(0); }
+  #slideshow-view{ -webkit-transform:translateZ(0); transform:translateZ(0); overflow:visible; }
   #stage, .slide, .slide img{ -webkit-transform:translateZ(0); transform:translateZ(0); }
 }
 
