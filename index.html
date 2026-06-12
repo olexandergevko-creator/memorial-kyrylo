@@ -880,6 +880,19 @@ function openSlides(photos, epochs, start){
   initSlides(cur);                        // → syncPlayback() стартує автоплей / відео
   showChrome();
   loadAsync();
+  forceRepaint();                         // iOS: перемалювати вміст після display:none→show
+}
+/* iOS/WebKit: після показу fixed-в'юера (display:none→block) його діти-шари
+   (фото, текст) не перемальовуються — фон є, вміст чорний. Примусовий reflow
+   #stage (display off→on у тому ж кадрі — без миготіння) змушує iOS їх намалювати. */
+function forceRepaint(){
+  if(!stage) return;
+  requestAnimationFrame(function(){
+    const d = stage.style.display;
+    stage.style.display = 'none';
+    void stage.offsetHeight;              // примусовий reflow
+    stage.style.display = d || '';
+  });
 }
 function openGroup(gi, start){
   activeGrp = gi;
