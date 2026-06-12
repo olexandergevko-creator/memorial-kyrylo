@@ -1527,6 +1527,11 @@ if(location.search.indexOf('dbg')>=0){
   __b.textContent='dbg ready';
   document.body.appendChild(__b);
   var __log=function(m){ __b.textContent=(m+'\n'+__b.textContent).slice(0,1600); };
+  // тест: окрема <img> прямо в body (поза #slideshow-view) — чи малюються фото взагалі
+  var __ti=document.createElement('img');
+  __ti.style.cssText='position:fixed;left:8px;bottom:60px;width:120px;height:auto;z-index:2147483647;border:3px solid lime';
+  document.body.appendChild(__ti);
+  setTimeout(function(){ try{ if(typeof GROUPS!=='undefined') __ti.src=GROUPS[0].photos[0].src; }catch(e){} }, 1500);
   window.addEventListener('error',function(e){ __log('ERR: '+e.message+' @'+String(e.filename||'').split('/').pop()+':'+e.lineno+':'+e.colno); });
   window.addEventListener('unhandledrejection',function(e){ __log('REJ: '+((e.reason&&e.reason.message)||e.reason)); });
   setInterval(function(){
