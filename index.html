@@ -128,7 +128,14 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 /* iOS/WebKit: filter:blur() у position:fixed-контейнері ламає композитинг усього
    шару → весь в'юер (навіть текст) рендериться ЧОРНИМ. На телефоні бічні поля —
    вузькі смужки, тож просто прибираємо розмитий бекдроп; фон #16120f лишається. */
-@media (max-width:820px){ #v-backdrop{display:none} }
+@media (max-width:820px){
+  #v-backdrop{display:none}
+  /* iOS/WebKit: filter/backdrop-filter усередині position:fixed-в'юера ламає
+     композитинг УСЬОГО шару → фото завантажене й видиме, але екран чорний.
+     На мобільному прибираємо все скло-розмиття (суто косметика — лишається
+     напівпрозорий фон). Це усуває причину чорного екрана. */
+  #slideshow-view *{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+}
 
 /* Stage occupies ONLY the region between the top zone and the dock zone, so the
    photo never enters the chrome and a click beside it = close. Calm → photo big;
