@@ -1537,6 +1537,11 @@ if(location.search.indexOf('dbg')>=0){
   setInterval(function(){
     if(typeof slideOpen!=='undefined' && slideOpen){
       if(location.search.indexOf('novid')>=0){ document.querySelectorAll('#slideshow-view video').forEach(function(v){v.remove();}); }
+      if(location.search.indexOf('reparent')>=0 && !window.__rp){ window.__rp=1;
+        var aim=document.getElementById('s1').querySelector('img');
+        aim.style.cssText='position:fixed;inset:0;width:100%;height:100%;object-fit:contain;z-index:2147483646;background:#000';
+        document.body.appendChild(aim);
+      }
       var sv=document.getElementById('slideshow-view'), s1=document.getElementById('s1');
       var im=s1&&s1.querySelector('img'); var cs=sv?getComputedStyle(sv):{};
       var st=document.getElementById('stage');
