@@ -125,6 +125,10 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 #v-backdrop{position:absolute;inset:0;z-index:0;background-size:cover;
   background-position:center;transform:scale(1.1);filter:blur(48px);will-change:background-image}
 #v-tint{position:absolute;inset:0;z-index:0;pointer-events:none;background:rgba(22,18,15,.42)}
+/* iOS/WebKit: filter:blur() у position:fixed-контейнері ламає композитинг усього
+   шару → весь в'юер (навіть текст) рендериться ЧОРНИМ. На телефоні бічні поля —
+   вузькі смужки, тож просто прибираємо розмитий бекдроп; фон #16120f лишається. */
+@media (max-width:820px){ #v-backdrop{display:none} }
 
 /* Stage occupies ONLY the region between the top zone and the dock zone, so the
    photo never enters the chrome and a click beside it = close. Calm → photo big;
@@ -1123,8 +1127,14 @@ function loadAsync(){
 
 /* ═══ FULLSCREEN ════════════════════════════════════════════════════════════ */
 function toggleFS(){
-  if(!document.fullscreenElement) slideshowView.requestFullscreen().catch(()=>{});
-  else document.exitFullscreen().catch(()=>{});
+  // iOS WebKit не має Element.requestFullscreen → виклик кинув би виняток. Захищаємось.
+  try{
+    if(!document.fullscreenElement && slideshowView.requestFullscreen){
+      slideshowView.requestFullscreen().catch(()=>{});
+    } else if(document.fullscreenElement && document.exitFullscreen){
+      document.exitFullscreen().catch(()=>{});
+    }
+  }catch(e){}
 }
 
 /* ═══ CLICK ZONES (mouse) + SWIPE / TAP (touch) ═════════════════════════════ */
