@@ -153,14 +153,14 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 .slide.is-video video{display:block}
 .slide.is-video{pointer-events:auto}   /* щоб контроли відео були клікабельні (звичайні слайди — none) */
 
-/* Epoch name — quiet, always visible (calm + active) */
+/* Epoch name — лише з інтерфейсом (chrome). У спокої (автоплей) видно ЛИШЕ фото. */
 #v-epochname{position:absolute;top:0;left:0;right:0;z-index:6;text-align:center;
   pointer-events:none;font-family:'Playfair Display',serif;font-style:italic;font-weight:400;
-  font-size:13px;letter-spacing:.04em;color:var(--text);
-  padding:calc(16px + env(safe-area-inset-top)) 64px 30px;
+  font-size:12.5px;letter-spacing:.04em;color:var(--text);
+  padding:calc(16px + env(safe-area-inset-top)) 64px 30px;opacity:0;
   text-shadow:0 1px 14px rgba(0,0,0,.7);
-  background:linear-gradient(to bottom,rgba(22,18,15,.5),transparent);transition:font-size 250ms}
-#slideshow-view.chrome #v-epochname{font-size:12.5px}
+  background:linear-gradient(to bottom,rgba(22,18,15,.5),transparent);transition:opacity 250ms ease}
+#slideshow-view.chrome #v-epochname{opacity:1}
 
 /* Top bar — active only */
 #v-top{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;
@@ -190,19 +190,21 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 #slideshow-view.chrome #v-dock{
   background:linear-gradient(to top,rgba(22,18,15,.86) 0%,rgba(22,18,15,.5) 60%,transparent 100%)}
 
-/* Order top→bottom: controls · thumbs (transient) · epoch bar · counter (persistent) */
-#controls,#v-thumbwrap{opacity:0;transition:opacity 250ms ease;pointer-events:none}
+/* Усе в доці (контроли · мініатюри · смуга епох · лічильник) — ЛИШЕ з інтерфейсом
+   (chrome). У спокої — чисте фото без написів і смуги-покрутки. */
+#controls,#v-thumbwrap,#v-epochbar,#v-counter{opacity:0;transition:opacity 250ms ease;pointer-events:none}
 #slideshow-view.chrome #controls,
-#slideshow-view.chrome #v-thumbwrap{opacity:1;pointer-events:auto}
+#slideshow-view.chrome #v-thumbwrap,
+#slideshow-view.chrome #v-epochbar,
+#slideshow-view.chrome #v-counter{opacity:1;pointer-events:auto}
 #controls{display:flex;align-items:center;gap:14px}
 #v-thumbwrap{width:100%;max-width:560px;
   -webkit-mask-image:linear-gradient(to right,transparent,#000 12%,#000 88%,transparent);
   mask-image:linear-gradient(to right,transparent,#000 12%,#000 88%,transparent)}
 #v-thumbs{display:flex;gap:4px;justify-content:center;align-items:flex-end;overflow:hidden;padding:2px 0}
 
-/* Epoch divider bar + counter — persistent (visible in calm) */
-#v-epochbar{display:flex;width:100%;max-width:560px;gap:3px;height:3px;
-  pointer-events:auto;cursor:pointer}
+/* Epoch divider bar + counter — лише з інтерфейсом (chrome); opacity керується вище */
+#v-epochbar{display:flex;width:100%;max-width:560px;gap:3px;height:3px;cursor:pointer}
 .eseg{position:relative;height:3px;border-radius:2px;background:rgba(245,244,240,.16);
   overflow:hidden;min-width:5px}
 .eseg.past{background:var(--accent-dim)}
@@ -900,26 +902,32 @@ function openSlides(photos, epochs, start){
   showChrome();
   loadAsync();
 }
-function openGroup(gi, start){
+// Повна послідовність «усе життя»: УСІ групи в порядку показу, ВКЛЮЧНО з «Обличчям» (останні).
+// Вхід у будь-яку епоху грає цю саму послідовність — тож по закінченні епохи перехід у наступну.
+function buildLifeSequence(){
+  const photos = [], segs = []; let off = 0;
+  GROUPS.forEach((g, gi) => {
+    if(!g.photos.length) return;
+    segs.push({title:cleanTitle(g.title), start:off, count:g.photos.length, gi});
+    g.photos.forEach(p => photos.push(p));
+    off += g.photos.length;
+  });
+  return {photos, segs};
+}
+function openGroup(gi, start){            // вхід в епоху → грає з її початку, далі — наступні епохи
   activeGrp = gi;
-  const g = GROUPS[gi];
-  openSlides(g.photos, [{title:cleanTitle(g.title), start:0, count:g.photos.length}], start || 0);
+  const seq = buildLifeSequence();
+  const seg = seq.segs.find(s => s.gi === gi);
+  openSlides(seq.photos, seq.segs, (seg ? seg.start : 0) + (start || 0));
 }
 function openList(photos, title){        // сумісність: один синтетичний список
   activeGrp = -1;
   openSlides(photos, [{title:cleanTitle(title||''), start:0, count:photos.length}], 0);
 }
-function openLife(){                      // «Пройти все життя» — епохи I→III поспіль
+function openLife(){                      // «Пройти все життя» — усі епохи + «Обличчя» поспіль
   activeGrp = -1;
-  const eps = GROUPS.filter(g => g.kind !== 'faces');
-  const photos = [], segs = []; let off = 0;
-  eps.forEach(g => {
-    if(!g.photos.length) return;
-    segs.push({title:cleanTitle(g.title), start:off, count:g.photos.length});
-    g.photos.forEach(p => photos.push(p));
-    off += g.photos.length;
-  });
-  openSlides(photos, segs, 0);
+  const seq = buildLifeSequence();
+  openSlides(seq.photos, seq.segs, 0);
 }
 function goBack(){
   stopAuto();
