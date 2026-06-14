@@ -307,6 +307,8 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 /* owner-кнопки (Категорії/Порядок) приховані назавжди — розмітка лишається,
    щоб JS-слухачі не падали; прибрати клас із кнопок, щоб повернути їх */
 .hide-owner{display:none !important}
+/* видимо приховано, лишається для скрін-рідерів (заголовки структури h1/h2) */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 #review-view{position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:200}
 #review-bar{
@@ -535,6 +537,7 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 
 <!-- LANDING -->
 <div id="groups-view">
+  <h1 class="sr-only">Лудвік Кирило Анатолійович</h1>
   <button id="cat-open" class="hide-owner" title="Розподілити фото за категоріями">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round">
@@ -563,12 +566,13 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
   <section id="epochs" aria-label="Епохи життя"></section>
 
   <section id="faces-block">
+    <h2 class="sr-only">Обличчя</h2>
     <div id="faces-grid"></div>
   </section>
 
   <section id="candle" aria-label="Свічка пам'яті">
     <div id="candle-frame">
-      <video class="candle-media" autoplay muted loop playsinline preload="metadata" poster="assets/p/8e343d98526edccd.jpg"><source src="assets/v/ce23a7324c0caa15.mp4" type="video/mp4"></video>
+      <video class="candle-media" aria-hidden="true" autoplay muted loop playsinline preload="metadata" poster="assets/p/8e343d98526edccd.jpg"><source src="assets/v/ce23a7324c0caa15.mp4" type="video/mp4"></video>
       <img id="candle-img" src="assets/p/8e343d98526edccd.jpg" alt="Свічка пам'яті">
       <div id="candle-veil"></div>
     </div>
@@ -711,9 +715,11 @@ const slots = [document.getElementById('s0'),
                document.getElementById('s2')];
 let arr = [0, 1, 2];
 // Коли відео-кадр догрався — за автоплею йдемо далі (нециркулярно)
-slots.forEach(s => { const v = s.querySelector('video'); if(v) v.addEventListener('ended', () => {
-  if(s.classList.contains('active') && playing && cur < activePhotos.length - 1) navigate(1);
-}); });
+slots.forEach(s => { const v = s.querySelector('video'); if(v){
+  const adv = () => { if(s.classList.contains('active') && playing && cur < activePhotos.length - 1) navigate(1); };
+  v.addEventListener('ended', adv);
+  v.addEventListener('error', adv);   // битий/незавантажений відео-кадр не блокує автоплей «усього життя»
+}});
 
 /* ═══ DOM REFS ═══════════════════════════════════════════════════════════════ */
 const groupsView   = document.getElementById('groups-view');
@@ -1281,6 +1287,7 @@ function buildGrid(){
     gridBody.appendChild(cols);
   });
 }
+let gridLastFocus = null;
 function openGrid(){
   stopAuto();
   pauseSlotVideos();                      // зупинити звук відео при відкритті сітки
@@ -1290,8 +1297,15 @@ function openGrid(){
   gridView.scrollTop = 0;
   const here = gridBody.querySelector('.gcell.here');
   if(here) here.scrollIntoView({ block:'center' });
+  gridLastFocus = document.activeElement;             // aria-modal: перевести фокус усередину діалогу
+  const gc = document.getElementById('grid-close');
+  if(gc) gc.focus({ preventScroll:true });
 }
-function closeGrid(){ gridOpen = false; gridView.classList.remove('show'); if(slideOpen) syncPlayback(); }  // відновити автоплей/відео
+function closeGrid(){
+  gridOpen = false; gridView.classList.remove('show');
+  if(gridLastFocus && gridLastFocus.focus){ gridLastFocus.focus({ preventScroll:true }); gridLastFocus = null; }  // повернути фокус назад
+  if(slideOpen) syncPlayback();           // відновити автоплей/відео
+}
 
 /* ═══ BUTTONS ═══════════════════════════════════════════════════════════════ */
 btnPrev.addEventListener('click', () => { navigate(-1); showChrome(); });
