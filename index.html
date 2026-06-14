@@ -304,6 +304,9 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 }
 #review-open:hover{color:var(--accent);border-color:var(--accent-dim)}
 #review-open svg{width:14px;height:14px}
+/* owner-кнопки (Категорії/Порядок) приховані назавжди — розмітка лишається,
+   щоб JS-слухачі не падали; прибрати клас із кнопок, щоб повернути їх */
+.hide-owner{display:none !important}
 
 #review-view{position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:200}
 #review-bar{
@@ -532,7 +535,7 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
 
 <!-- LANDING -->
 <div id="groups-view">
-  <button id="cat-open" title="Розподілити фото за категоріями">
+  <button id="cat-open" class="hide-owner" title="Розподілити фото за категоріями">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round">
       <path d="M20.6 13.4 11 3.8a2 2 0 0 0-1.4-.6H4a1 1 0 0 0-1 1v5.6a2 2 0 0 0 .6 1.4l9.6 9.6a2 2 0 0 0 2.8 0l4.6-4.6a2 2 0 0 0 0-2.8Z"/>
@@ -540,7 +543,7 @@ body{background:radial-gradient(ellipse 120% 90% at 50% 42%,#141414 0%,var(--bg)
     </svg>
     Категорії
   </button>
-  <button id="review-open" title="Порядок фото">
+  <button id="review-open" class="hide-owner" title="Порядок фото">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round">
       <line x1="9" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="9" y1="18" x2="21" y2="18"/>
